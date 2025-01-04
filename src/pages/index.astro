@@ -1,11 +1,37 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import { supabase } from "../lib/supabase";
+
+async function fetchGameList() {
+  const { data, error } = await supabase
+    .from('games')
+    .select('id, name'); // Select only the columns you need
+
+  if (error) {
+    console.error('Error fetching games:', error);
+    return [];
+  }
+  return data || [];
+}
+
+const gameList = await fetchGameList();
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+<html>
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width"/>
+		<meta name="generator" content={Astro.generator}/>
+		<title>home</title>
+	</head>
+<body>
+	<h1>Available TCGs</h1>
+  <ul>
+    {gameList.map((game) => (
+      <li>
+        <a href={`/games/${game.name}`}>{game.name}</a>
+      </li>
+    ))}
+  </ul>
+</body>
+</html>

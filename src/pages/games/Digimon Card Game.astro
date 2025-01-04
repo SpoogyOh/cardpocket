@@ -1,0 +1,36 @@
+---
+import { supabase } from "../../lib/supabase";
+
+const digimonGameId = 'bd6b0e9f-e292-4ac0-b0e6-d8b9886f4d3d';
+
+async function fetchDigimonSets(gameId) {
+  const { data, error } = await supabase
+    .from('sets')
+    .select('id, name, code')
+    .eq('game_id', gameId);
+
+  if (error) {
+    console.error('Error fetching Digimon sets:', error);
+    return [];
+  }
+  return data || [];
+}
+
+const digimonSets = await fetchDigimonSets(digimonGameId);
+---
+
+<h1>Digimon TCG Collection</h1>
+<p>Welcome to your Digimon TCG card collection.</p>
+
+<h2>Available Sets</h2>
+{digimonSets.length === 0 ? (
+  <p>No sets available for the Digimon TCG yet.</p>
+) : (
+  <ul>
+    {digimonSets.map((set) => (
+      <li key={set.id}>
+        {set.name} ({set.code})
+      </li>
+    ))}
+  </ul>
+)}
