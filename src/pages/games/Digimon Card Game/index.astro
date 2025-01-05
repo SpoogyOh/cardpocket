@@ -1,5 +1,5 @@
 ---
-import { supabase } from "../../lib/supabase";
+import { supabase } from "../../../lib/supabase";
 
 const digimonGameId = 'bd6b0e9f-e292-4ac0-b0e6-d8b9886f4d3d';
 
@@ -29,7 +29,7 @@ const digimonSets = await fetchDigimonSets(digimonGameId);
   <ul>
     {digimonSets.map((set) => (
       <li key={set.id}>
-        {set.name} ({set.code})
+        <a href={`/games/Digimon Card Game/${set.code}`}>{set.name} ({set.code})</a>
       </li>
     ))}
   </ul>

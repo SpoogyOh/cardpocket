@@ -1,0 +1,69 @@
+---
+import { supabase } from "../../../lib/supabase";
+
+export async function getStaticPaths() {
+  const { data: sets, error } = await supabase
+    .from('sets')
+    .select('code') // Select the 'code' column
+    .eq('game_id', 'bd6b0e9f-e292-4ac0-b0e6-d8b9886f4d3d');
+
+  if (error) {
+    console.error('Error fetching Digimon sets for static paths:', error);
+    return [];
+  }
+
+  return sets.map((set) => ({
+    params: { setCode: set.code }, // Use 'code' for the parameter
+  }));
+}
+
+const { setCode } = Astro.params; // Get 'setCode' from params
+
+let set;
+let cards;
+
+if (setCode) {
+  const { data: selectedSet, error: setError } = await supabase
+    .from('sets')
+    .select('*')
+    .eq('code', setCode) // Use 'code' to find the set
+    .single();
+
+  if (setError) {
+    console.error('Error fetching set:', setError);
+  } else {
+    set = selectedSet;
+  }
+
+  const { data: setCards, error: cardsError } = await supabase
+    .from('base_cards')
+    .select('*')
+    .eq('set_id', set?.id); // Use the set's ID to find cards
+
+  if (cardsError) {
+    console.error('Error fetching cards:', cardsError);
+  } else {
+    cards = setCards;
+  }
+}
+---
+
+  <main title={set ? `Digimon TCG - ${set.code}` : 'Digimon TCG - Set Details'}>
+    {set ? (
+      <>
+        <h1>{set.name}</h1>
+        <p>Here are the cards in the {set.code} set:</p> {/* Display the code */}
+        {cards && cards.length > 0 ? (
+          <ul>
+            {cards.map((card) => (
+              <li key={card.id}>{card.name}</li>
+            ))}
+          </ul>
+        ) : (
+          <p>No cards found in this set.</p>
+        )}
+      </>
+    ) : (
+      <p>Set not found.</p>
+    )}
+  </main>
