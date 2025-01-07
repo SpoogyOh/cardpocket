@@ -4,7 +4,7 @@ import { supabase } from "../../../lib/supabase";
 export async function getStaticPaths() {
   const { data: sets, error } = await supabase
     .from('sets')
-    .select('code') // Select the 'code' column
+    .select('code')
     .eq('game_id', 'bd6b0e9f-e292-4ac0-b0e6-d8b9886f4d3d');
 
   if (error) {
@@ -13,57 +13,142 @@ export async function getStaticPaths() {
   }
 
   return sets.map((set) => ({
-    params: { setCode: set.code }, // Use 'code' for the parameter
+    params: { setCode: set.code },
   }));
 }
 
-const { setCode } = Astro.params; // Get 'setCode' from params
+const { setCode } = Astro.params;
 
 let set;
-let cards;
+let baseCardsWithVersions;
 
 if (setCode) {
   const { data: selectedSet, error: setError } = await supabase
     .from('sets')
     .select('*')
-    .eq('code', setCode) // Use 'code' to find the set
+    .eq('code', setCode)
     .single();
 
   if (setError) {
     console.error('Error fetching set:', setError);
   } else {
     set = selectedSet;
-  }
 
-  const { data: setCards, error: cardsError } = await supabase
-    .from('base_cards')
-    .select('*')
-    .eq('set_id', set?.id); // Use the set's ID to find cards
+    // Fetch all base cards for the selected set
+    const { data: baseCards, error: baseCardsError } = await supabase
+      .from('base_cards')
+      .select('*')
+      .eq('set', set.code);
 
-  if (cardsError) {
-    console.error('Error fetching cards:', cardsError);
-  } else {
-    cards = setCards;
+    if (baseCardsError) {
+      console.error('Error fetching base cards:', baseCardsError);
+    } else {
+      // Fetch all cards for the selected set
+      const { data: allCards, error: allCardsError } = await supabase
+        .from('cards')
+        .select('base_cards(number, name, type), version, rarity, img_url')
+        .in(
+          'base_number',
+          baseCards.map((bc) => bc.number)
+        );
+
+      if (allCardsError) {
+        console.error('Error fetching all cards:', allCardsError);
+      } else {
+        // Group cards by base card number
+        const groupedCards = baseCards.map((baseCard) => {
+          return {
+            baseCard,
+            versions: allCards.filter(
+              (card) => card.base_cards?.number === baseCard.number
+            ),
+          };
+        });
+        baseCardsWithVersions = groupedCards;
+      }
+    }
   }
 }
 ---
 
-  <main title={set ? `Digimon TCG - ${set.code}` : 'Digimon TCG - Set Details'}>
-    {set ? (
-      <>
-        <h1>{set.name}</h1>
-        <p>Here are the cards in the {set.code} set:</p> {/* Display the code */}
-        {cards && cards.length > 0 ? (
-          <ul>
-            {cards.map((card) => (
-              <li key={card.id}>{card.name}</li>
-            ))}
-          </ul>
-        ) : (
-          <p>No cards found in this set.</p>
-        )}
-      </>
-    ) : (
-      <p>Set not found.</p>
-    )}
-  </main>
+<main title={set ? `Digimon TCG - ${set.code}` : 'Digimon TCG - Set Details'}>
+  {set ? (
+    <>
+      <h1>{set.name}</h1>
+      <p>Here are the cards in the {set.code} set:</p>
+
+      {baseCardsWithVersions && baseCardsWithVersions.length > 0 ? (
+        <div class="card-list">
+          {baseCardsWithVersions.map(({ baseCard, versions }) => (
+            <div key={baseCard.number} class="base-card-container">
+              <div class="base-card-info">
+                <h3>{baseCard.name}</h3>
+                <h3>{baseCard.number}</h3>
+                <p>Type: {baseCard.type}</p>
+              </div>
+              <div class="card-versions">
+                {versions.map((card) => (
+                  <div key={`${card.base_cards?.number}-${card.version}`} class="card-version">
+                    <img src={card.img_url} alt={card.base_cards?.name}/>
+                    <p class="rarity">{card.rarity}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p>No cards found in this set.</p>
+      )}
+    </>
+  ) : (
+    <p>Set not found.</p>
+  )}
+</main>
+
+<style>
+  .card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .base-card-container {
+    border: 1px solid #ccc;
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+
+  .base-card-info {
+    flex-basis: 200px;
+  }
+
+  .card-versions {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto; /* Enable horizontal scrolling if needed */
+  }
+
+  .card-version {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .card-version img {
+    max-width: 150px;
+    height: auto;
+    border: 1px solid #eee;
+    border-radius: 4px;
+  }
+
+  .rarity {
+    margin-top: 5px;
+    font-size: 0.9em;
+    color: #777;
+  }
+</style>

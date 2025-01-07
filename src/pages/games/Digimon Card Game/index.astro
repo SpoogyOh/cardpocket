@@ -6,7 +6,7 @@ const digimonGameId = 'bd6b0e9f-e292-4ac0-b0e6-d8b9886f4d3d';
 async function fetchDigimonSets(gameId) {
   const { data, error } = await supabase
     .from('sets')
-    .select('id, name, code')
+    .select('name, code')
     .eq('game_id', gameId);
 
   if (error) {
@@ -28,7 +28,7 @@ const digimonSets = await fetchDigimonSets(digimonGameId);
 ) : (
   <ul>
     {digimonSets.map((set) => (
-      <li key={set.id}>
+      <li key={set.code}>
         <a href={`/games/Digimon Card Game/${set.code}`}>{set.name} ({set.code})</a>
       </li>
     ))}
