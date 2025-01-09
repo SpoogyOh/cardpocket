@@ -80,7 +80,7 @@ if (setCode) {
       {baseCardsWithVersions && baseCardsWithVersions.length > 0 ? (
         <div class="card-list">
           {baseCardsWithVersions.map(({ baseCard, versions }) => (
-            <div key={baseCard.number} class="base-card-container">
+            <div class="base-card-container">
               <div class="base-card-info">
                 <h3>{baseCard.name}</h3>
                 <h3>{baseCard.number}</h3>
@@ -88,7 +88,7 @@ if (setCode) {
               </div>
               <div class="card-versions">
                 {versions.map((card) => (
-                  <div key={`${card.base_cards?.number}-${card.version}`} class="card-version">
+                  <div class="card-version">
                     <img src={card.img_url} alt={card.base_cards?.name}/>
                     <p class="rarity">{card.rarity}</p>
                   </div>
