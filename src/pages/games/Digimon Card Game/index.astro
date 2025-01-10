@@ -28,7 +28,7 @@ const digimonSets = await fetchDigimonSets(digimonGameId);
 ) : (
   <ul>
     {digimonSets.map((set) => (
-      <li key={set.code}>
+      <li >
         <a href={`/games/Digimon Card Game/${set.code}`}>{set.name} ({set.code})</a>
       </li>
     ))}

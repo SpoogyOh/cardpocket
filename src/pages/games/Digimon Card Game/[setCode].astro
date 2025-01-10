@@ -1,5 +1,38 @@
 ---
 import { supabase } from "../../../lib/supabase";
+import CardActions from "../../../components/CardActions";
+
+const accessToken = Astro.cookies.get("sb-access-token");
+const refreshToken = Astro.cookies.get("sb-refresh-token");
+
+if (!accessToken || !refreshToken) {
+  return Astro.redirect("/signin");
+}
+
+let session;
+try {
+  session = await supabase.auth.setSession({
+    refresh_token: refreshToken.value,
+    access_token: accessToken.value,
+  });
+  if (session.error) {
+    Astro.cookies.delete("sb-access-token", {
+      path: "/",
+    });
+    Astro.cookies.delete("sb-refresh-token", {
+      path: "/",
+    });
+    return Astro.redirect("/signin");
+  }
+} catch (error) {
+  Astro.cookies.delete("sb-access-token", {
+    path: "/",
+  });
+  Astro.cookies.delete("sb-refresh-token", {
+    path: "/",
+  });
+  return Astro.redirect("/signin");
+}
 
 export async function getStaticPaths() {
   const { data: sets, error } = await supabase
@@ -21,8 +54,12 @@ const { setCode } = Astro.params;
 
 let set;
 let baseCardsWithVersions;
+let userId: string | null = null;
 
 if (setCode) {
+  const { data: { session } } = await supabase.auth.getSession();
+  userId = session?.user?.id || null;
+  
   const { data: selectedSet, error: setError } = await supabase
     .from('sets')
     .select('*')
@@ -69,7 +106,19 @@ if (setCode) {
     }
   }
 }
+
+let userCardQuantities: Record<string, number> = {};
+if (userId) {
+  const { data, error } = await supabase
+    .from('user_cards')
+    .select('card_id, quantity')
+    .eq('user_id', userId);
+  if (data) {
+    data.forEach(item => userCardQuantities[item.card_id] = item.quantity);
+  }
+}
 ---
+
 
 <main title={set ? `Digimon TCG - ${set.code}` : 'Digimon TCG - Set Details'}>
   {set ? (
@@ -87,12 +136,23 @@ if (setCode) {
                 <p>Type: {baseCard.type}</p>
               </div>
               <div class="card-versions">
-                {versions.map((card) => (
-                  <div class="card-version">
-                    <img src={card.img_url} alt={card.base_cards?.name}/>
-                    <p class="rarity">{card.rarity}</p>
-                  </div>
-                ))}
+                {versions.map((card) => {
+  console.log("Card object in [setCode].astro:", card);
+  return (
+    <div class="card-version">
+      <img src={card.img_url} alt={card.base_cards?.name}/>
+      <p class="rarity">{card.rarity}</p>
+      {userId && (
+        <CardActions
+          client:visible
+          cardId={card.id}
+          userId={userId}
+        />
+      )}
+      {!userId && <p>Log in to track</p>}
+    </div>
+  );
+})}
               </div>
             </div>
           ))}
@@ -150,5 +210,12 @@ if (setCode) {
     margin-top: 5px;
     font-size: 0.9em;
     color: #777;
+  }
+
+  .collection-actions {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    margin-top: 5px;
   }
 </style>
