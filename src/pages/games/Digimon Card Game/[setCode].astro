@@ -1,38 +1,6 @@
 ---
 import { supabase } from "../../../lib/supabase";
-import CardActions from "../../../components/CardActions";
-
-const accessToken = Astro.cookies.get("sb-access-token");
-const refreshToken = Astro.cookies.get("sb-refresh-token");
-
-if (!accessToken || !refreshToken) {
-  return Astro.redirect("/signin");
-}
-
-let session;
-try {
-  session = await supabase.auth.setSession({
-    refresh_token: refreshToken.value,
-    access_token: accessToken.value,
-  });
-  if (session.error) {
-    Astro.cookies.delete("sb-access-token", {
-      path: "/",
-    });
-    Astro.cookies.delete("sb-refresh-token", {
-      path: "/",
-    });
-    return Astro.redirect("/signin");
-  }
-} catch (error) {
-  Astro.cookies.delete("sb-access-token", {
-    path: "/",
-  });
-  Astro.cookies.delete("sb-refresh-token", {
-    path: "/",
-  });
-  return Astro.redirect("/signin");
-}
+import CardActions from "../../../components/CardActions.jsx";
 
 export async function getStaticPaths() {
   const { data: sets, error } = await supabase
@@ -53,13 +21,16 @@ export async function getStaticPaths() {
 const { setCode } = Astro.params;
 
 let set;
-let baseCardsWithVersions;
 let userId: string | null = null;
+let isSignedIn: boolean = false;
+let baseCardsWithVersions: { baseCard: any; versions: any[] }[] | undefined;
+let userCardQuantities: Record<string, number> = {};
 
 if (setCode) {
   const { data: { session } } = await supabase.auth.getSession();
   userId = session?.user?.id || null;
-  
+  isSignedIn = !!session?.user;
+
   const { data: selectedSet, error: setError } = await supabase
     .from('sets')
     .select('*')
@@ -71,8 +42,8 @@ if (setCode) {
   } else {
     set = selectedSet;
 
-    // Fetch all base cards for the selected set
-    const { data: baseCards, error: baseCardsError } = await supabase
+    let baseCards = [];
+    const { data: fetchedBaseCards, error: baseCardsError } = await supabase
       .from('base_cards')
       .select('*')
       .eq('set', set.code);
@@ -80,79 +51,90 @@ if (setCode) {
     if (baseCardsError) {
       console.error('Error fetching base cards:', baseCardsError);
     } else {
-      // Fetch all cards for the selected set
-      const { data: allCards, error: allCardsError } = await supabase
-        .from('cards')
-        .select('base_cards(number, name, type), version, rarity, img_url')
-        .in(
-          'base_number',
-          baseCards.map((bc) => bc.number)
-        );
+      baseCards = fetchedBaseCards || [];
+    }
 
-      if (allCardsError) {
-        console.error('Error fetching all cards:', allCardsError);
-      } else {
-        // Group cards by base card number
-        const groupedCards = baseCards.map((baseCard) => {
-          return {
-            baseCard,
-            versions: allCards.filter(
-              (card) => card.base_cards?.number === baseCard.number
-            ),
-          };
-        });
-        baseCardsWithVersions = groupedCards;
+    const { data: allCards, error: allCardsError } = await supabase
+      .from('cards')
+      .select('id, base_cards(number, name, type), version, rarity, img_url')
+      .in(
+        'base_number',
+        baseCards.map((bc) => bc.number)
+      );
+
+    if (allCardsError) {
+      console.error('Error fetching all cards:', allCardsError);
+    } else {
+      const groupedCards = baseCards.map((baseCard) => ({
+        baseCard,
+        versions: allCards.filter(
+          (card) => card.base_cards?.number === baseCard.number
+        ),
+      }));
+      baseCardsWithVersions = groupedCards;
+
+      if (userId) {
+        const cardIdsInSet = allCards.map(card => card.id);
+        const { data: userCardsData, error: userCardsError } = await supabase
+          .from('user_cards')
+          .select('card_id, quantity')
+          .eq('user_id', userId)
+          .in('card_id', cardIdsInSet);
+
+        if (userCardsError) {
+          console.error('Error fetching user cards:', userCardsError);
+        } else {
+          userCardsData.forEach(userCard => {
+            userCardQuantities[userCard.card_id] = userCard.quantity;
+          });
+        }
       }
     }
   }
 }
-
-let userCardQuantities: Record<string, number> = {};
-if (userId) {
-  const { data, error } = await supabase
-    .from('user_cards')
-    .select('card_id, quantity')
-    .eq('user_id', userId);
-  if (data) {
-    data.forEach(item => userCardQuantities[item.card_id] = item.quantity);
-  }
-}
 ---
-
 
 <main title={set ? `Digimon TCG - ${set.code}` : 'Digimon TCG - Set Details'}>
   {set ? (
     <>
-      <h1>{set.name}</h1>
-      <p>Here are the cards in the {set.code} set:</p>
+      <h1>{set.code} - {set.name}</h1>
+      <div>
+        {isSignedIn ? (
+          <>
+            <p>You are signed in.</p>
+            <p>Your User ID: {userId}</p>
+          </>
+        ) : (
+          <p>You are not signed in.</p>
+        )}
+      </div>
 
+      <h2>Card List</h2>
       {baseCardsWithVersions && baseCardsWithVersions.length > 0 ? (
-        <div class="card-list">
+        <div class="card-list-container">
           {baseCardsWithVersions.map(({ baseCard, versions }) => (
-            <div class="base-card-container">
+            <div class="base-card-row">
               <div class="base-card-info">
                 <h3>{baseCard.name}</h3>
-                <h3>{baseCard.number}</h3>
+                <p>Number: {baseCard.number}</p>
                 <p>Type: {baseCard.type}</p>
               </div>
-              <div class="card-versions">
-                {versions.map((card) => {
-  console.log("Card object in [setCode].astro:", card);
-  return (
-    <div class="card-version">
-      <img src={card.img_url} alt={card.base_cards?.name}/>
-      <p class="rarity">{card.rarity}</p>
-      {userId && (
-        <CardActions
-          client:visible
-          cardId={card.id}
-          userId={userId}
-        />
-      )}
-      {!userId && <p>Log in to track</p>}
-    </div>
-  );
-})}
+              <div class="variants-container">
+                {versions.map((card) => (
+                  <div class="variant-card">
+                    <img src={card.img_url} alt={card.base_cards?.name} />
+                    <p>Rarity: {card.rarity}</p>
+                    {card.version && <p>Version: {card.version}</p>}
+                    {isSignedIn && (
+                      <CardActions
+                        client:load
+                        cardId={card.id}
+                        initialQuantity={userCardQuantities[card.id] || 0}
+                        userId={userId}
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           ))}
@@ -167,17 +149,18 @@ if (userId) {
 </main>
 
 <style>
-  .card-list {
+  .card-list-container {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    padding: 20px 0;
   }
 
-  .base-card-container {
-    border: 1px solid #ccc;
-    padding: 15px;
-    border-radius: 8px;
+  .base-card-row {
     display: flex;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 15px;
     gap: 20px;
     align-items: flex-start;
   }
@@ -186,35 +169,30 @@ if (userId) {
     flex-basis: 200px;
   }
 
-  .card-versions {
+  .variants-container {
     display: flex;
     gap: 10px;
-    overflow-x: auto; /* Enable horizontal scrolling if needed */
+    overflow-x: auto; /* Allow horizontal scrolling for variants */
   }
 
-  .card-version {
+  .variant-card {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
+    width: 150px; /* Adjust as needed */
   }
 
-  .card-version img {
-    max-width: 150px;
+  .variant-card img {
+    max-width: 100%;
     height: auto;
     border: 1px solid #eee;
     border-radius: 4px;
   }
 
-  .rarity {
-    margin-top: 5px;
-    font-size: 0.9em;
-    color: #777;
-  }
-
-  .collection-actions {
+  .card-actions {
     display: flex;
-    gap: 5px;
+    gap: 10px;
     align-items: center;
     margin-top: 5px;
   }
