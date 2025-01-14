@@ -1,6 +1,7 @@
 ---
 import { supabase } from "../../../lib/supabase";
-import CardActions from "../../../components/CardActions.jsx";
+import CardActions from "../../../components/CardActions.tsx";
+
 
 export async function getStaticPaths() {
   const { data: sets, error } = await supabase

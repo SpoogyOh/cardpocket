@@ -1,10 +1,16 @@
-// src/components/CardActions.jsx
+// src/components/CardActions.tsx
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabase'; // Adjust path if needed
+import { supabase } from '../lib/supabase'; // Import the client-side instance
 
-const CardActions = ({ cardId, initialQuantity, userId }) => {
+interface CardActionsProps {
+  cardId: string; // Or number, depending on your database schema
+  initialQuantity: number;
+  userId: string | null;
+}
+
+const CardActions: React.FC<CardActionsProps> = ({ cardId, initialQuantity, userId }) => {
   console.log("CardActions rendered with props:", { cardId, initialQuantity, userId });
-  
+
   const [quantity, setQuantity] = useState(initialQuantity);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -14,7 +20,10 @@ const CardActions = ({ cardId, initialQuantity, userId }) => {
     try {
       const { error } = await supabase
         .from('user_cards')
-        .upsert({ user_id: userId, card_id: cardId, quantity: quantity + 1 }, { onConflict: ['user_id', 'card_id'] });
+        .upsert(
+          { user_id: userId, card_id: cardId, quantity: quantity + 1 },
+          { onConflict: 'user_id,card_id' } // Ensure this matches your DB constraint name
+        );
       if (error) {
         console.error("Error adding card:", error);
         // Handle error (e.g., show a message)
@@ -33,7 +42,10 @@ const CardActions = ({ cardId, initialQuantity, userId }) => {
       const newQuantity = Math.max(0, quantity - 1);
       const { error } = await supabase
         .from('user_cards')
-        .upsert({ user_id: userId, card_id: cardId, quantity: newQuantity }, { onConflict: ['user_id', 'card_id'] });
+        .upsert(
+          { user_id: userId, card_id: cardId, quantity: newQuantity },
+          { onConflict: 'user_id,card_id' } // Ensure this matches your DB constraint name
+        );
       if (error) {
         console.error("Error removing card:", error);
         // Handle error
