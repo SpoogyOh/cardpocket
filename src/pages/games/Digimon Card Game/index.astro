@@ -1,4 +1,5 @@
 ---
+import Layout from "../../../layouts/Layout.astro";
 import { supabase } from "../../../lib/supabase";
 
 const digimonGameId = 'bd6b0e9f-e292-4ac0-b0e6-d8b9886f4d3d';
@@ -18,7 +19,7 @@ async function fetchDigimonSets(gameId) {
 
 const digimonSets = await fetchDigimonSets(digimonGameId);
 ---
-
+<Layout title="digimon">
 <h1>Digimon TCG Collection</h1>
 <p>Welcome to your Digimon TCG card collection.</p>
 
@@ -34,3 +35,4 @@ const digimonSets = await fetchDigimonSets(digimonGameId);
     ))}
   </ul>
 )}
+</Layout>

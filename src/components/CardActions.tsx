@@ -59,13 +59,16 @@ const CardActions: React.FC<CardActionsProps> = ({ cardId, initialQuantity, user
 
   return (
     <div className="card-actions">
-      <p>Owned: {quantity}</p>
-      <button onClick={handleAdd} disabled={isLoading}>
+      <p className="text-center text-xl">Owned: {quantity}</p>
+      <div className='text-center'>
+      <button className="text-xl border-black border-2 shadow-[2px_2px_0px_rgba(0,0,0,1)] bg-green-300 text-center w-1/2" onClick={handleAdd} disabled={isLoading}>
         Add
       </button>
-      <button onClick={handleRemove} disabled={isLoading || quantity === 0}>
+    
+      <button className="text-xl text-center border-black border-2 shadow-[2px_2px_0px_rgba(0,0,0,1)] bg-red-300 w-1/2"  onClick={handleRemove} disabled={isLoading || quantity === 0}>
         Remove
       </button>
+      </div>
     </div>
   );
 };

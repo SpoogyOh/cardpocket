@@ -1,5 +1,5 @@
 ---
-
+import Layout from "../layouts/Layout.astro";
 import { supabase } from "../lib/supabase";
 
 async function fetchGameList() {
@@ -16,14 +16,7 @@ async function fetchGameList() {
 
 const gameList = await fetchGameList();
 ---
-
-<html>
-	<head>
-		<meta charset="utf-8"/>
-		<meta name="viewport" content="width=device-width"/>
-		<meta name="generator" content={Astro.generator}/>
-		<title>home</title>
-	</head>
+<Layout title="home">
 <body>
 	<h1>Available TCGs</h1>
   <ul>
@@ -34,4 +27,4 @@ const gameList = await fetchGameList();
     ))}
   </ul>
 </body>
-</html>
+</Layout>

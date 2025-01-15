@@ -1,4 +1,5 @@
 ---
+import Layout from "../../../layouts/Layout.astro";
 import { supabase } from "../../../lib/supabase";
 import CardActions from "../../../components/CardActions.tsx";
 
@@ -95,16 +96,15 @@ if (setCode) {
 }
 ---
 
-<main title={set ? `Digimon TCG - ${set.code}` : 'Digimon TCG - Set Details'}>
+
+
+<Layout title={set ? `Digimon TCG - ${set.code}` : 'Digimon TCG - Set Details'}>
   {set ? (
     <>
       <h1>{set.code} - {set.name}</h1>
       <div>
         {isSignedIn ? (
-          <>
-            <p>You are signed in.</p>
-            <p>Your User ID: {userId}</p>
-          </>
+          <p>You are signed in. Your User ID: {userId}</p>
         ) : (
           <p>You are not signed in.</p>
         )}
@@ -112,27 +112,41 @@ if (setCode) {
 
       <h2>Card List</h2>
       {baseCardsWithVersions && baseCardsWithVersions.length > 0 ? (
-        <div class="card-list-container">
+        <div class="flex flex-col gap-8"> {/* Vertical flex container for base cards */}
           {baseCardsWithVersions.map(({ baseCard, versions }) => (
-            <div class="base-card-row">
-              <div class="base-card-info">
-                <h3>{baseCard.name}</h3>
-                <p>Number: {baseCard.number}</p>
-                <p>Type: {baseCard.type}</p>
+            <div class="border-black border-2 rounded-md bg-white p-4"> {/* Container for each base card and its variants */}
+              <div class="mb-4">
+                <a class="text-xl text-gray-700 font-bold border-black border-2 shadow-[8px_8px_0px_rgba(0,0,0,1)] bg-yellow-200">{baseCard.number}</a>
+                <a class="text-xl text-gray-700 font-bold border-black border-2 shadow-[8px_8px_0px_rgba(0,0,0,1)] bg-yellow-200">{baseCard.name}</a>
+                <a class="text-xl text-gray-700 font-bold border-black border-2 shadow-[8px_8px_0px_rgba(0,0,0,1)] bg-yellow-200">{baseCard.type}</a>
               </div>
-              <div class="variants-container">
+
+              <div class="flex flex-row gap-4 overflow-x-auto pb-4"> {/* Horizontal container for variants */}
                 {versions.map((card) => (
-                  <div class="variant-card">
-                    <img src={card.img_url} alt={card.base_cards?.name} />
-                    <p>Rarity: {card.rarity}</p>
-                    {card.version && <p>Version: {card.version}</p>}
+                  <div class="w-64 h-auto border-black border-2 rounded-md shadow-[8px_8px_0px_rgba(0,0,0,1)] bg-yellow-200 flex flex-col">
+                    <a href={`/set/${setCode}/card/${baseCard.number}`} class="block cursor-pointer">
+                      <article class="w-full h-full flex flex-col">
+                        <figure class="w-full h-full border-black border-b-2 overflow-hidden">
+                          <img
+                            src={card.img_url}
+                            alt={baseCard.name}
+                            class="w-full h-full object-cover"
+                          />
+                        </figure>
+                        <div class="px-4 py-3 text-left">
+                          <p class="text-xl text-center">{card.rarity}</p>
+                        </div>
+                      </article>
+                    </a>
                     {isSignedIn && (
-                      <CardActions
-                        client:load
-                        cardId={card.id}
-                        initialQuantity={userCardQuantities[card.id] || 0}
-                        userId={userId}
-                      />
+                      <div class="px-4 pb-3">
+                        <CardActions
+                          client:load
+                          cardId={card.id}
+                          initialQuantity={userCardQuantities[card.id] || 0}
+                          userId={userId}
+                        />
+                      </div>
                     )}
                   </div>
                 ))}
@@ -147,54 +161,5 @@ if (setCode) {
   ) : (
     <p>Set not found.</p>
   )}
-</main>
+</Layout>
 
-<style>
-  .card-list-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    padding: 20px 0;
-  }
-
-  .base-card-row {
-    display: flex;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 15px;
-    gap: 20px;
-    align-items: flex-start;
-  }
-
-  .base-card-info {
-    flex-basis: 200px;
-  }
-
-  .variants-container {
-    display: flex;
-    gap: 10px;
-    overflow-x: auto; /* Allow horizontal scrolling for variants */
-  }
-
-  .variant-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    width: 150px; /* Adjust as needed */
-  }
-
-  .variant-card img {
-    max-width: 100%;
-    height: auto;
-    border: 1px solid #eee;
-    border-radius: 4px;
-  }
-
-  .card-actions {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-top: 5px;
-  }
-</style>

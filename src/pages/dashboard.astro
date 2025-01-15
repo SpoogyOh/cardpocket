@@ -1,4 +1,5 @@
 ---
+import Layout from "../layouts/Layout.astro";
 export const prerender = false
 import { supabase } from "../lib/supabase";
 
@@ -37,9 +38,10 @@ try {
 const email = session.data.user?.email;
 
 ---
-
+<Layout title="Dashboard">
   <h1>Welcome {email}</h1>
   <p>We are happy to see you here</p>
   <form action="/api/auth/signout">
     <button type="submit">Sign out</button>
   </form>
+</Layout>
