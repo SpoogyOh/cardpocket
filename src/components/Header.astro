@@ -1,0 +1,57 @@
+---
+// Astro component
+---
+
+<nav class="flex h-14 items-center justify-between bg-white relative">
+  <div class="absolute inset-y-0 left-0 w-px bg-gray-200"></div>
+  <div class="flex items-center gap-8 h-full">
+    
+    <div class="hidden md:flex items-center gap-6 h-full">
+      <a href="/binders" class="text-sm px-4 h-full flex items-center hover:bg-gray-100">
+        Binders
+      </a>
+      <a href="/wants" class="text-sm px-4 h-full flex items-center hover:bg-gray-100">
+        Wants
+      </a>
+      <a href="/home" class="text-sm px-4 h-full flex items-center hover:bg-gray-100">
+        Home
+      </a>
+    </div>
+  </div>
+  
+  <div class="flex-1 max-w-md mx-4">
+    <input
+      type="search"
+      placeholder="Search..."
+      class="w-full h-9 px-3 rounded-md border border-gray-200 bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+    />
+  </div>
+
+  <div class="flex items-center gap-6 h-full">
+    <a href="/friends" class="flex items-center gap-2 px-4 h-full hover:bg-gray-100">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+        <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+        <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+      </svg>
+      <span class="text-sm hidden md:inline">Friends</span>
+    </a>
+    <a href="/profile" class="text-sm px-4 h-full flex items-center border-l-2 border-black">
+      Spoogy
+    </a>
+  </div>
+  <div class="absolute inset-y-0 right-0 w-px bg-gray-200"></div>
+</nav>
+
+<style>
+  nav {
+    border-bottom: 2px solid #000000; /* Tailwind's gray-200 */
+  }
+
+  nav a:hover {
+    opacity: 0.8;
+  }
+
+  input:focus {
+    outline: none;
+  }
+</style>
